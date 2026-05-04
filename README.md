@@ -120,7 +120,7 @@ PORT=8000
 
 <div align="center">
 
-## 🤖 Need a custom AI / ML solution?
+##  Need a custom AI / ML solution?
 
 **RavenDOS builds production AI & ML systems** — agentic pipelines, RAG, custom fine-tunes,
 multi-source enrichment, computer vision, NLP, forecasting, recommender systems,
