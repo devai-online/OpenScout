@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LeadFinder — open-source B2B lead generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+          mono: ['JetBrains Mono', 'ui-monospace'],
+        },
+        colors: {
+          ink: { 950: '#070707', 900: '#0c0c0d', 800: '#141416', 700: '#1c1c20', 600: '#26262b', 500: '#3a3a42' },
+          accent: { DEFAULT: '#10b981', 600: '#059669', 400: '#34d399' }
+        }
+      }
+    }
+  }
+</script>
+<style>
+  html, body { background: #070707; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #26262b; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3a42; }
+
+  .glow {
+    background: radial-gradient(1200px 600px at 20% -10%, rgba(16, 185, 129, 0.08), transparent 60%),
+                radial-gradient(900px 500px at 90% 10%, rgba(99, 102, 241, 0.06), transparent 60%);
+  }
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0));
+    border: 1px solid #1c1c20;
+  }
+  .card:hover { border-color: #26262b; }
+  .pill-active {
+    background: #141416; border: 1px solid #26262b; color: #fff;
+  }
+  .pill {
+    color: #8b8b95;
+  }
+  .pill:hover { color: #d4d4d8; }
+  .input {
+    background: #0c0c0d; border: 1px solid #1c1c20;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .input:focus {
+    outline: none; border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16,185,129,.12);
+  }
+  .btn-primary {
+    background: linear-gradient(180deg, #10b981, #059669);
+    color: #052e1f; font-weight: 600;
+    box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, 0 6px 20px -8px rgba(16,185,129,.5);
+  }
+  .btn-primary:hover { filter: brightness(1.05); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.4); }
+  .btn-secondary {
+    background: #141416; border: 1px solid #26262b; color: #d4d4d8;
+  }
+  .btn-secondary:hover { background: #1c1c20; }
+
+  .lead-row { transition: background .15s; }
+  .lead-row:hover { background: #0f0f10; }
+
+  .terminal {
+    background: #050505; border: 1px solid #1c1c20;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12.5px; line-height: 1.55;
+    color: #c4c4cc;
+  }
+  .log-line { opacity: 0; animation: fadein .3s forwards; }
+  @keyframes fadein { to { opacity: 1; } }
+
+  .badge {
+    font-size: 10.5px; font-weight: 600; letter-spacing: .04em;
+    padding: 2px 8px; border-radius: 999px;
+    text-transform: uppercase;
+  }
+  .badge-running { background: rgba(16,185,129,.12); color: #34d399; }
+  .badge-completed { background: rgba(99,102,241,.12); color: #a5b4fc; }
+  .badge-error { background: rgba(239,68,68,.14); color: #fca5a5; }
+  .badge-cancelled { background: rgba(115,115,115,.18); color: #a1a1aa; }
+  .badge-pending { background: rgba(234,179,8,.12); color: #fde68a; }
+
+  .score-bar { height: 4px; background: #1c1c20; border-radius: 999px; overflow: hidden; }
+  .score-fill { height: 100%; background: linear-gradient(90deg, #10b981, #34d399); }
+
+  .skeleton { background: linear-gradient(90deg, #141416 0%, #1c1c20 50%, #141416 100%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  .fade-in { animation: fadein .35s ease-out; }
+</style>
+</head>
+<body class="font-sans text-zinc-200 min-h-screen">
+
+<div class="glow min-h-screen">
+  <!-- Header -->
+  <header class="sticky top-0 z-30 backdrop-blur-md bg-ink-950/70 border-b border-ink-700">
+    <div class="max-w-6xl mx-auto px-6 h-24 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <a href="https://ravendos.com" target="_blank" rel="noopener"><img src="/static/logo.png" alt="RavenDOS" class="w-[84px] h-[84px] rounded-md object-contain" /></a>
+        <div class="font-semibold tracking-tight">LeadFinder</div>
+        <span class="text-xs text-zinc-500 ml-1">open-source</span>
+      </div>
+      <nav class="flex items-center gap-1 text-sm">
+        <button data-tab="search" class="tab pill px-3 py-1.5 rounded-md transition">Search</button>
+        <button data-tab="live" class="tab pill px-3 py-1.5 rounded-md transition">Live</button>
+        <button data-tab="history" class="tab pill px-3 py-1.5 rounded-md transition">History</button>
+      </nav>
+      <div class="flex items-center gap-2 text-xs text-zinc-500">
+        <span id="status-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+        <span id="status-text">idle</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-6 py-10">
+
+    <!-- SEARCH TAB -->
+    <section id="tab-search" class="tab-pane">
+      <div class="grid lg:grid-cols-[1.1fr_1fr] gap-8">
+        <div>
+          <h1 class="text-3xl font-semibold tracking-tight mb-2">Find real B2B leads. Free.</h1>
+          <p class="text-zinc-400 mb-8 leading-relaxed">
+            Stop paying $200/mo for stale lead lists. Tell us a domain and a country —
+            we pull live company sites, score them with an LLM, and stream verified
+            contacts straight to your screen.
+          </p>
+
+          <div class="card rounded-xl p-6">
+            <form id="search-form" class="space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-zinc-400 mb-1.5">Domain / industry <span class="text-red-400">*</span></label>
+                <input name="domain" required minlength="2" placeholder="e.g. dental clinics, fintech startups, e-commerce SaaS" class="input w-full px-3.5 py-2.5 rounded-lg text-sm" />
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-zinc-400 mb-1.5">Country</label>
+                  <input name="country" placeholder="USA, UK, India..." class="input w-full px-3.5 py-2.5 rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-zinc-400 mb-1.5">Limit <span class="text-zinc-600">(max 25)</span></label>
+                  <input name="limit" type="number" min="1" max="25" value="10" class="input w-full px-3.5 py-2.5 rounded-lg text-sm" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-zinc-400 mb-1.5">Headcount <span class="text-zinc-600">(optional)</span></label>
+                <div class="grid grid-cols-2 gap-4">
+                  <input name="min_emp" type="number" min="0" placeholder="min" class="input w-full px-3.5 py-2.5 rounded-lg text-sm" />
+                  <input name="max_emp" type="number" min="0" placeholder="max" class="input w-full px-3.5 py-2.5 rounded-lg text-sm" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-zinc-400 mb-1.5">Notes <span class="text-zinc-600">(optional)</span></label>
+                <textarea name="notes" rows="2" placeholder="anything else to narrow targeting..." class="input w-full px-3.5 py-2.5 rounded-lg text-sm resize-none"></textarea>
+              </div>
+
+              <div class="flex gap-3 pt-2">
+                <button id="run-btn" type="submit" class="btn-primary px-5 py-2.5 rounded-lg text-sm">Start search</button>
+                <button id="cancel-btn" type="button" class="btn-secondary px-5 py-2.5 rounded-lg text-sm hidden">Cancel</button>
+              </div>
+
+              <div id="form-error" class="text-sm text-red-400 hidden"></div>
+            </form>
+          </div>
+        </div>
+
+        <aside class="space-y-4">
+          <div class="card rounded-xl p-5">
+            <div class="text-xs uppercase tracking-wider text-zinc-500 mb-3">How it works</div>
+            <ol class="text-sm text-zinc-300 space-y-2.5 list-none">
+              <li class="flex gap-3"><span class="text-accent font-mono">01</span> Llama-3.3 expands your input into smart search queries</li>
+              <li class="flex gap-3"><span class="text-accent font-mono">02</span> Scrapling harvests SERPs with stealth fetcher</li>
+              <li class="flex gap-3"><span class="text-accent font-mono">03</span> LLM scores each domain for relevance</li>
+              <li class="flex gap-3"><span class="text-accent font-mono">04</span> Top results get site-crawled for contacts</li>
+              <li class="flex gap-3"><span class="text-accent font-mono">05</span> Leads stream live to your screen</li>
+            </ol>
+          </div>
+          <div class="card rounded-xl p-5">
+            <div class="text-xs uppercase tracking-wider text-zinc-500 mb-2">Need a managed pipeline?</div>
+            <p class="text-sm text-zinc-400 leading-relaxed">
+              This tool is free forever. If you want an end-to-end system integrated into your stack,
+              <a href="mailto:hello@ravendos.com" class="text-accent hover:underline">contact RavenDOS</a>.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- LIVE TAB -->
+    <section id="tab-live" class="tab-pane hidden">
+      <div class="grid lg:grid-cols-[1.4fr_1fr] gap-6">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <div class="text-xs uppercase tracking-wider text-zinc-500">Leads</div>
+              <h2 class="text-xl font-semibold"><span id="live-count">0</span> found</h2>
+            </div>
+            <div id="live-actions" class="flex gap-2 hidden">
+              <a id="export-link" href="#" class="btn-secondary px-3 py-1.5 rounded-md text-xs">Export CSV</a>
+            </div>
+          </div>
+          <div id="live-leads" class="space-y-2"></div>
+          <div id="live-empty" class="card rounded-xl p-12 text-center text-zinc-500 text-sm">
+            No active session. Start one from the Search tab.
+          </div>
+        </div>
+        <div>
+          <div class="text-xs uppercase tracking-wider text-zinc-500 mb-2">Activity log</div>
+          <div id="live-log" class="terminal rounded-xl p-3 h-[600px] overflow-y-auto"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORY TAB -->
+    <section id="tab-history" class="tab-pane hidden">
+      <div class="grid lg:grid-cols-[300px_1fr] gap-6">
+        <div>
+          <div class="text-xs uppercase tracking-wider text-zinc-500 mb-2">Past searches</div>
+          <div id="history-list" class="space-y-1.5"></div>
+        </div>
+        <div id="history-detail" class="card rounded-xl p-12 text-center text-zinc-500 text-sm">
+          Select a search to see leads.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="max-w-6xl mx-auto px-6 py-10 text-xs text-zinc-600 border-t border-ink-800 mt-10">
+    Built by <a href="https://ravendos.com" target="_blank" rel="noopener" class="text-zinc-400 hover:text-accent">RavenDOS</a>.
+  </footer>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
